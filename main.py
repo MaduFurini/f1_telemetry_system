@@ -1,28 +1,35 @@
+# main.py
 import socket
-from configs.config import UDP_IP, UDP_PORT, BUFFER_SIZE
 from telemetries.car_telemetry import parse_car_telemetry
 
+UDP_IP = "127.0.0.1"
+UDP_PORT = 20777
+BUFFER_SIZE = 2048
+
 def run():
-    print("Iniciando...")
+    print("Aguardando telemetria do F1 23...")
 
-    # Cria socket UDP
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)  
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     sock.bind((UDP_IP, UDP_PORT))
-    sock.settimeout(1.0) 
-
-    print("Aguardando pacotes UDP do F1 23...")
 
     try:
         while True:
-            try:
-                data, addr = sock.recvfrom(BUFFER_SIZE)
-                speed, rpm = parse_car_telemetry(data)
-                print(f"Velocidade do carro 0: {speed} km/h, RPM: {rpm}")
-            except socket.timeout:
-                continue
-    except KeyboardInterrupt:
-        print("\nPrograma interrompido pelo usuário.")
+            data, addr = sock.recvfrom(BUFFER_SIZE)
+
+            tele = parse_car_telemetry(data)
+            if not tele:
+                continue 
+
+            print(
+                f"Carro {tele['player_car_index']} | "
+                f"Vel: {tele['speed']} km/h | "
+                f"RPM: {tele['rpm']} | "
+                f"Marcha: {tele['gear']} | "
+                f"Throttle: {tele['throttle']:.2f} | "
+                f"Brake: {tele['brake']:.2f} | "
+                f"DRS: {'ON' if tele['drs'] else 'OFF'}"
+            )
     finally:
         sock.close()
 
